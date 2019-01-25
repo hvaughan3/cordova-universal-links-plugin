@@ -189,11 +189,7 @@ function projectRoot() {
 }
 
 function pathToEntitlementsFile() {
-  var configXmlHelper = new ConfigXmlHelper(context),
-    projectName = configXmlHelper.getProjectName(),
-    fileName = projectName + '.entitlements';
-
-  return path.join(projectName, 'Resources', fileName);
+  return '$(PROJECT_DIR)/$(PROJECT_NAME)/Entitlements-$(CONFIGURATION).plist';
 }
 
 // endregion
