@@ -15,7 +15,8 @@ var ASSOCIATED_DOMAINS = 'com.apple.developer.associated-domains';
 var context;
 var projectRoot;
 var projectName;
-var entitlementsFilePath;
+var debugEntitlementsFilePath;
+var releaseEntitlementsFilePath;
 
 module.exports = {
   generateAssociatedDomainsEntitlements: generateEntitlements
@@ -32,10 +33,12 @@ module.exports = {
 function generateEntitlements(cordovaContext, pluginPreferences) {
   context = cordovaContext;
 
-  var currentEntitlements = getEntitlementsFileContent();
-  var newEntitlements = injectPreferences(currentEntitlements, pluginPreferences);
+  var currentDebugEntitlements = getDebugEntitlementsFileContent();
+  var currentReleaseEntitlements = getReleaseEntitlementsFileContent();
+  var newDebugEntitlements = injectPreferences(currentDebugEntitlements, pluginPreferences);
+  var newReleaseEntitlements = injectPreferences(currentReleaseEntitlements, pluginPreferences);
 
-  saveContentToEntitlementsFile(newEntitlements);
+  saveContentToEntitlementsFile(newDebugEntitlements, newReleaseEntitlements);
 }
 
 // endregion
@@ -47,24 +50,46 @@ function generateEntitlements(cordovaContext, pluginPreferences) {
  *
  * @param {Object} content - data to save; JSON object that will be transformed into xml
  */
-function saveContentToEntitlementsFile(content) {
-  var plistContent = plist.build(content);
-  var filePath = pathToEntitlementsFile();
+function saveContentToEntitlementsFile(debugContent, releaseContent) {
+  var debugPlistContent = plist.build(debugContent);
+  var releasePlistContent = plist.build(releaseContent);
+  var debugFilePath = pathToDebugEntitlementsFile();
+  var releaseFilePath = pathToReleaseEntitlementsFile();
 
   // ensure that file exists
-  mkpath.sync(path.dirname(filePath));
+  mkpath.sync(path.dirname(debugFilePath));
+  mkpath.sync(path.dirname(releaseFilePath));
 
   // save it's content
-  fs.writeFileSync(filePath, plistContent, 'utf8');
+  fs.writeFileSync(debugFilePath, debugPlistContent, 'utf8');
+  fs.writeFileSync(releaseFilePath, releasePlistContent, 'utf8');
 }
 
 /**
- * Read data from existing entitlements file. If none exist - default value is returned
+ * Read data from existing DEBUG entitlements file. If none exist - default value is returned
  *
  * @return {String} entitlements file content
  */
-function getEntitlementsFileContent() {
-  var pathToFile = pathToEntitlementsFile();
+function getDebugEntitlementsFileContent() {
+  var pathToFile = pathToDebugEntitlementsFile();
+  var content;
+
+  try {
+    content = fs.readFileSync(pathToFile, 'utf8');
+  } catch (err) {
+    return defaultEntitlementsFile();
+  }
+
+  return plist.parse(content);
+}
+
+/**
+ * Read data from existing RELEASE entitlements file. If none exist - default value is returned
+ *
+ * @return {String} entitlements file content
+ */
+function getReleaseEntitlementsFileContent() {
+  var pathToFile = pathToReleaseEntitlementsFile();
   var content;
 
   try {
@@ -136,16 +161,29 @@ function domainsListEntryForHost(host) {
 // region Path helper methods
 
 /**
- * Path to entitlements file.
+ * Path to DEBUG entitlements file.
  *
  * @return {String} absolute path to entitlements file
  */
-function pathToEntitlementsFile() {
-  if (entitlementsFilePath === undefined) {
-    entitlementsFilePath = path.join(getProjectRoot(), 'platforms', 'ios', getProjectName(), 'Resources', getProjectName() + '.entitlements');
+function pathToDebugEntitlementsFile() {
+  if (debugEntitlementsFilePath === undefined) {
+    debugEntitlementsFilePath = path.join(getProjectRoot(), 'platforms', 'ios', getProjectName(), 'Entitlements-Debug.plist');
   }
 
-  return entitlementsFilePath;
+  return debugEntitlementsFilePath;
+}
+
+/**
+ * Path to PRODUCTION entitlements file.
+ *
+ * @return {String} absolute path to entitlements file
+ */
+function pathToReleaseEntitlementsFile() {
+  if (releaseEntitlementsFilePath === undefined) {
+    releaseEntitlementsFilePath = path.join(getProjectRoot(), 'platforms', 'ios', getProjectName(), 'Entitlements-Release.plist');
+  }
+
+  return releaseEntitlementsFilePath;
 }
 
 /**
