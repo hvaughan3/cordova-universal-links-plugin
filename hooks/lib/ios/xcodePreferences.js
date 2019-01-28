@@ -32,8 +32,8 @@ function enableAssociativeDomainsCapability(cordovaContext) {
   // adjust preferences
   activateAssociativeDomains(projectFile.xcode);
 
-  // add entitlements file to pbxfilereference
-  addPbxReference(projectFile.xcode);
+  // add entitlements file to pbxfilereference - REMOVED to allow normal Cordova merge
+  // addPbxReference(projectFile.xcode);
 
   // save changes
   projectFile.write();
